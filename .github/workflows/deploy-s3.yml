@@ -1,0 +1,32 @@
+name: Build and Deploy
+on: 
+    push:
+        branches:
+          - deploy # change this later, but for now having it check a branch that doesnt exist so it never runs
+permissions:
+  contents: write
+jobs:
+  build-and-deploy:
+    concurrency: ci-${{ github.ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Install and Build 🔧
+        run: |
+          npm ci
+          npm run build
+    
+      - name: Deploy to AWS
+        uses: reggionick/s3-deploy@v4
+        with:
+            folder: dist
+            bucket: ${{ secrets.S3_BUCKET }}
+            bucket-region: ${{ secrets.S3_BUCKET_REGION }}
+            dist-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+            invalidation: /
+            delete-removed: true
+            no-cache: true
+            private: true
+            files-to-include: '{.*/**,**}'
